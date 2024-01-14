@@ -39,6 +39,11 @@ final class Settings
         $this->projectHash = $projectHash;
     }
 
+    public function setEnabled(bool $enabled): void
+    {
+        $this->enabled = $enabled;
+    }
+
     public function isEnabled(): bool
     {
         return $this->getProjectHash() !== '' && $this->getProjectId() !== '' && $this->enabled;
