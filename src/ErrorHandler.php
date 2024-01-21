@@ -34,11 +34,7 @@ final class ErrorHandler
      */
     public static $previousErrorHandlerCallback = null;
 
-    public function __construct(private readonly PilotClientService $pilotClientService)
-    {
-    }
-
-    public function register(): bool
+    public static function register(): bool
     {
         register_shutdown_function( function () {
             $error = error_get_last();
@@ -54,16 +50,16 @@ final class ErrorHandler
         return true;
     }
 
-    public function logException(Throwable $e): void
+    public static function logException(Throwable $e): void
     {
-        $this->pilotClientService->sendToServer($e);
+        PilotClientService::getInstance()->sendToServer($e);
 
         if (is_callable(self::$previousExceptionCallback) && !$e::class instanceof ProcessPilotException) {
             call_user_func(self::$previousExceptionCallback, $e);
         }
     }
 
-    public function logError(int $err_severity, string $err_msg, string $err_file, int $err_line): bool
+    public static function logError(int $err_severity, string $err_msg, string $err_file, int $err_line): bool
     {
         switch($err_severity)
         {

@@ -6,8 +6,11 @@ use ProcessPilot\Client\Service\PilotClientService;
 
 class PilotClientServiceFactory
 {
-    public function __invoke()
+    public function __invoke(): PilotClientService
     {
-        return new PilotClientService((new SettingsFactory)());
+        $pilotClient = PilotClientService::getInstance();
+        $pilotClient::setSettings((new SettingsFactory)());
+
+        return $pilotClient;
     }
 }

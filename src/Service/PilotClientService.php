@@ -6,13 +6,27 @@ use ProcessPilot\Client\Settings;
 
 class PilotClientService
 {
-    public function __construct(private readonly Settings $settings)
+    private static ?self $instance = null;
+
+    public static Settings $settings;
+
+    public static function getInstance(): self
     {
+        if (null === self::$instance) {
+            self::$instance = new static();
+        }
+
+        return self::$instance;
+    }
+
+    public static function setSettings(Settings $settings)
+    {
+        self::$settings = $settings;
     }
 
     public function sendToServer(\Throwable $e): bool
     {
-        if (!$this->settings->isEnabled()) {
+        if (!self::$settings->isEnabled()) {
             return false;
         }
 
