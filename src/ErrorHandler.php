@@ -39,7 +39,7 @@ final class ErrorHandler
         register_shutdown_function( function () {
             $error = error_get_last();
 
-            if ($error["type"] === E_ERROR) {
+            if (is_array($error) && array_key_exists('type', $error) && $error["type"] === E_ERROR) {
                 self::logError( $error["type"], $error["message"], $error["file"], $error["line"] );
             }
         });
