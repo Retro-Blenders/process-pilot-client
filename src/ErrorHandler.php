@@ -36,6 +36,25 @@ final class ErrorHandler
 
     public static function register(): bool
     {
+        self::registerShutdownHandler();
+        self::registerExceptionHandler();
+        self::registerErrorHandler();
+
+        return true;
+    }
+
+    public static function registerErrorHandler(): void
+    {
+        self::$previousErrorHandlerCallback = set_error_handler([self::class, 'logError'], E_ALL);
+    }
+
+    public static function registerExceptionHandler(): void
+    {
+        self::$previousExceptionCallback = set_exception_handler( [self::class, 'logException'] );
+    }
+
+    public static function registerShutdownHandler(): void
+    {
         register_shutdown_function( function () {
             $error = error_get_last();
 
@@ -43,11 +62,6 @@ final class ErrorHandler
                 self::logError( $error["type"], $error["message"], $error["file"], $error["line"] );
             }
         });
-
-        self::$previousExceptionCallback = set_exception_handler( [self::class, 'logException'] );
-        self::$previousErrorHandlerCallback = set_error_handler([self::class, 'logError'], E_ALL);
-
-        return true;
     }
 
     public static function logException(Throwable $e): void
