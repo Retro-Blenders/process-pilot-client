@@ -26,6 +26,8 @@ class PilotClientService
 
     public function sendToServer(\Throwable $e): bool
     {
+        dump('send to pp');
+
         if (!self::$settings->isEnabled()) {
             return false;
         }
@@ -39,20 +41,28 @@ class PilotClientService
         );
         curl_setopt($ch, CURLOPT_POST, 1);
 
+        $payload = [
+            'exception' => [
+                'name' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'code' => $e->getCode(),
+                'trace' => $e->getTrace()
+            ]
+        ];
+
+        if (self::$settings->isSessionPayload() && session_status() === PHP_SESSION_ACTIVE) {
+            $payload['session'] = $_SESSION;
+        }
+
+        dump($payload);
+
         // In real life you should use something like:
         curl_setopt(
             $ch,
             CURLOPT_POSTFIELDS,
-            http_build_query([
-                'exception' => [
-                    'name' => $e::class,
-                    'message' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'code' => $e->getCode(),
-                    'trace' => $e->getTrace()
-                ]
-            ])
+            http_build_query($payload)
         );
 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
