@@ -1,0 +1,180 @@
+name: Check Code Quality
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '**'
+  pull_request: {}
+
+jobs:
+
+  composer-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: "shivammathur/setup-php@v2"
+        with:
+          php-version: "8.2"
+
+      - name: Enable cache for vendor and environment files
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/vendor
+            ${{ github.workspace }}/node_modules
+            ${{ github.workspace }}/.env.local.php
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: composer install -d ${{ github.workspace }}
+
+      - name: Setup Execution Flags
+        run: |
+          chmod +x ${{ github.workspace }}/bin/phpunit
+          chmod +x ${{ github.workspace }}/bin/console
+
+      - uses: borales/actions-yarn@v3.0.0
+        with:
+          cmd: install
+
+      - name: Dump Local environment vars (Test)
+        run:
+          composer dump-env test
+
+      - name: Show installed PhpUnit-Version
+        run: ${{ github.workspace }}/bin/phpunit --version
+
+      - name: Show used environment vars
+        run: |
+          ${{ github.workspace }}/bin/console debug:dotenv
+
+  phpunit:
+    runs-on: ubuntu-latest
+    needs: composer-dependencies
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: "shivammathur/setup-php@v2"
+        with:
+          php-version: "8.2"
+
+      - name: Cache vendor files
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/vendor
+            ${{ github.workspace }}/node_modules
+            ${{ github.workspace }}/.env.local.php
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Enable execution flags
+        run: |
+          chmod +x ${{ github.workspace }}/bin/phpunit
+          chmod +x ${{ github.workspace }}/bin/console
+
+      - name: Show used environment vars (test environment)
+        run:
+          ${{ github.workspace }}/bin/console debug:dotenv
+
+      - name: Run PhpUnit tests
+        run:
+          composer tests
+
+  phpstan:
+    runs-on: ubuntu-latest
+    needs: composer-dependencies
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: "shivammathur/setup-php@v2"
+        with:
+          php-version: "8.2"
+
+      - name: Cache vendor files
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/vendor
+            ${{ github.workspace }}/node_modules
+            ${{ github.workspace }}/.env.local.php
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Enable execution flags
+        run: |
+          chmod +x ${{ github.workspace }}/bin/phpunit
+          chmod +x ${{ github.workspace }}/bin/console
+
+      - name: Show used environment vars (test environment)
+        run:
+          ${{ github.workspace }}/bin/console debug:dotenv
+
+      - name: Run Static tests (PhpStan)
+        run:
+          composer static-test
+
+  codestyle:
+    runs-on: ubuntu-latest
+    needs: composer-dependencies
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: "shivammathur/setup-php@v2"
+        with:
+          php-version: "8.2"
+
+      - name: Cache vendor files
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/vendor
+            ${{ github.workspace }}/node_modules
+            ${{ github.workspace }}/.env.local.php
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Enable execution flags
+        run: |
+          chmod +x ${{ github.workspace }}/bin/phpunit
+          chmod +x ${{ github.workspace }}/bin/console
+
+      - name: Show used environment vars (test environment)
+        run:
+          ${{ github.workspace }}/bin/console debug:dotenv
+
+      - name: Run PSR-12 codestyle tests
+        run:
+          composer codestyle
+
+  stage:
+    needs: [phpunit, codestyle, phpstan]
+    if: ${{ github.ref_name == 'main' }}
+    uses: ./.github/workflows/deployment.yml
+    with:
+      target: stage
+    secrets:
+      symfony_decrypt: ${{ secrets.SYMFONY_DECRYPTION_SECRET_STAGE }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+
+  production:
+    needs: [phpunit, codestyle, phpstan]
+    if: ${{ github.ref_type == 'tag' }}
+    uses: ./.github/workflows/deployment.yml
+    with:
+      target: prod
+    secrets:
+      symfony_decrypt: ${{ secrets.SYMFONY_DECRYPTION_SECRET_PROD }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}

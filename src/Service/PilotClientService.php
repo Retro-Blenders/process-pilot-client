@@ -32,6 +32,28 @@ class PilotClientService
 
         echo '[send2pilot] ' . $e::class . ' - ' . $e->getMessage() . PHP_EOL;
 
+        $ch = curl_init();
+
+        curl_setopt(
+            $ch,
+            CURLOPT_URL,
+            self::$settings->getHost() . '/api/import/' . self::$settings->getProjectHash()
+        );
+        curl_setopt($ch, CURLOPT_POST, 1);
+
+        // In real life you should use something like:
+        curl_setopt(
+            $ch,
+            CURLOPT_POSTFIELDS,
+            http_build_query(['log' => $e])
+        );
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        $server_output = curl_exec($ch);
+
+        curl_close($ch);
+
         return true;
     }
 }
