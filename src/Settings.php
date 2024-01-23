@@ -9,6 +9,8 @@ final class Settings
     private string $projectId = '';
     private string $projectHash = '';
 
+    private bool $sessionPayload = false;
+
     public function getHost(): string
     {
         return rtrim($this->host, '/');
@@ -47,5 +49,15 @@ final class Settings
     public function isEnabled(): bool
     {
         return $this->getProjectHash() !== '' && $this->getProjectId() !== '' && $this->enabled;
+    }
+
+    public function isSessionPayload(): bool
+    {
+        return $this->sessionPayload;
+    }
+
+    public function setSessionPayload(bool $sessionPayload): void
+    {
+        $this->sessionPayload = $sessionPayload;
     }
 }
