@@ -30,8 +30,6 @@ class PilotClientService
             return false;
         }
 
-        echo '[send2pilot] ' . $e::class . ' - ' . $e->getMessage() . PHP_EOL;
-
         $ch = curl_init();
 
         curl_setopt(
@@ -45,7 +43,16 @@ class PilotClientService
         curl_setopt(
             $ch,
             CURLOPT_POSTFIELDS,
-            http_build_query(['log' => $e])
+            http_build_query([
+                'exception' => [
+                    'name' => $e::class,
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'code' => $e->getCode(),
+                    'trace' => $e->getTrace()
+                ]
+            ])
         );
 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

@@ -11,7 +11,7 @@ final class Settings
 
     public function getHost(): string
     {
-        return $this->host;
+        return rtrim($this->host, '/');
     }
 
     public function setHost(string $host): void
